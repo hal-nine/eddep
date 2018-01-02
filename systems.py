@@ -13,7 +13,8 @@ list: list all data files.
 visited: lists all the locations visited.
 buy: lists all items for sale on a location.
 sell: lists all station buy prices at location.
-trade2: lists possible trades between origin and target location."""
+trade2: lists possible trades between origin and target location.
+ferengi: list high trades in known systems."""
 
 LOGGER = logging.getLogger('systems.py')
 LOGGER.setLevel(logging.DEBUG)
@@ -211,11 +212,30 @@ class Systems:
             print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
             print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
 
-  def high_trades():
+  def high_trades(self):
     """Find locations with highest trades between them."""
     # Iterate through all locations.
-    # Compute trades between location pair.
-    # Sort by profit and svae the most profitable trade and location pair.
+    for origin in self.locations:
+      for target in self.locations:
+        if origin == target or origin == 'Shinrarta Dezhra.Jameson Memorial':
+          continue
+        else:
+          origin_items = self.utils.read_csv(origin, self.csv_files)
+          target_items = self.utils.read_csv(target, self.csv_files)
+          for o_item in origin_items:
+            o_columns = o_item.split(';')
+            for t_item in target_items:
+              t_columns = t_item.split(';')
+              # If the item is available for purchase in the origin system.
+              # And its the same item on both systems.
+              if o_columns[7] and o_columns[2] == t_columns[2]:
+                sell_price =  int(t_columns[3])
+                buy_price = int(o_columns[4])
+                profit = sell_price - buy_price
+                if profit >1650:
+                  print('{} ---> {}'.format(origin, target))
+                  print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
+                  print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
 
 def main():
   """Elite Dangerous Data Explorer."""
@@ -245,6 +265,7 @@ def main():
     if not args.origin or not args.to:
       print('Please pecify origin and destination snippets. Run with -h for help.')
       exit()
+    systems.clean()
     systems.trade2(args.origin, args.to)
   if args.command == 'buy':
     if not args.origin:
@@ -256,6 +277,9 @@ def main():
       print('Please specify origin snippet. Run with -h for help.')
       exit()
     systems.list_goods_prices(args.origin)
+  if args.command == 'ferengi':
+    systems.high_trades()
+
 
 if __name__ == "__main__":
   try:
