@@ -266,6 +266,7 @@ def main():
       print('Please pecify origin and destination snippets. Run with -h for help.')
       exit()
     systems.clean()
+    systems = Systems()
     systems.trade2(args.origin, args.to)
   if args.command == 'buy':
     if not args.origin:
