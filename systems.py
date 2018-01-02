@@ -12,7 +12,8 @@ clean: cleanup older data files.
 list: list all data files.
 visited: lists all the locations visited.
 buy: lists all items for sale on a location.
-sell: lists all station buy prices at location."""
+sell: lists all station buy prices at location.
+trade2: lists possible trades between origin and target location."""
 
 LOGGER = logging.getLogger('systems.py')
 LOGGER.setLevel(logging.DEBUG)
@@ -168,20 +169,20 @@ class Systems:
     for item in location_items:
       columns = item.split(';')
       if columns[7]:
-        print('{:25} {:>5} Cr {:>8} t'.format(columns[2], int(columns[4]),
+        print('{:30} {:>5} Cr {:>8} t'.format(columns[2], int(columns[4]),
                                               int(columns[7])))
   def list_goods_prices(self, location):
     """List which can be sold at station."""
     # Get full location name from snippet.
     location = self.utils.location_matcher(location, self.locations)
-    # Match csv fil and get items.
+    # Match csv file and get items.
     location_items = self.utils.read_csv(location, self.csv_files)
     if not location_items:
       return
     print('ITEM, LOCATION Buy PRICE, DEMAND - {}'.format(location))
     for item in location_items:
       columns = item.split(';')
-      print('{:25} {:>5} Cr {}'.format(columns[2], int(columns[3]),
+      print('{:30} {:>5} Cr {}'.format(columns[2], int(columns[3]),
                                             columns[6]))
 
   def trade2(self, origin, target):
@@ -192,14 +193,29 @@ class Systems:
     # Get full location name from snippet.
     origin = self.utils.location_matcher(origin, self.locations)
     target = self.utils.location_matcher(target, self.locations)
-    # Match csv fil and get items.
+    # Match csv file and get items.
     origin_items = self.utils.read_csv(origin, self.csv_files)
     target_items = self.utils.read_csv(target, self.csv_files)
-    for item in target_items:
-      columns = item.split(';')
-      if columns[7]:
-        print('{}: {} cr {} t supply'.format(columns[2], int(columns[4]), int(columns[7])))
+    print('Origin location: {} Target location: {}'.format(origin, target))
+    for o_item in origin_items:
+      o_columns = o_item.split(';')
+      for t_item in target_items:
+        t_columns = t_item.split(';')
+        # If the item is available for purchase in the origin system.
+        # And its the same item on both systems.
+        if o_columns[7] and o_columns[2] == t_columns[2]:
+          sell_price =  int(t_columns[3])
+          buy_price = int(o_columns[4])
+          profit = sell_price - buy_price
+          if profit >0:
+            print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
+            print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
 
+  def high_trades():
+    """Find locations with highest trades between them."""
+    # Iterate through all locations.
+    # Compute trades between location pair.
+    # Sort by profit and svae the most profitable trade and location pair.
 
 def main():
   """Elite Dangerous Data Explorer."""
