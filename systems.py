@@ -1,4 +1,3 @@
-#!/Users/debic/anaconda/bin/python3
 """Elite Dangerous Data Explorer and Planner.
 
 EDDEP is a tool for Elite Dangerous players to help them check their status,
@@ -19,7 +18,12 @@ by changing the File Location parameter.
 Once a few systems have been visited and their data files collected EDDEP can
 be used as follows.
 
-./systems.py clean
+python3 ./systems.py clean
+
+Note: If you add a shebang line on top of this file i.e.
+#!/<local_path_to_python3_binary>/bin/python3 and chmod the file so its
+executable i.e. chmod 755 systems.py than just invoking ./systems.py as
+described in the remaining examples should start the script.
 
 Cleanup data files, i.e. multiple visits to the same system will generate
 multiple data files. This command will remove older versions. Useful for
