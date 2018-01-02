@@ -1,5 +1,5 @@
 #!/Users/debic/anaconda/bin/python3
-"""Elite Dangerous Data Explorer and PLanner.
+"""Elite Dangerous Data Explorer and Planner.
 
 EDDEP is a tool for Elite Dangerous players to help them check their status,
 maximize trade profits and find trading opportunities between visited systems.
