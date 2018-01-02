@@ -1,5 +1,82 @@
 #!/Users/debic/anaconda/bin/python3
-"""Elite Dangerous Data Explorer."""
+"""Elite Dangerous Data Explorer and PLanner.
+
+EDDEP is a tool for Elite Dangerous players to help them check their status,
+maximize trade profits and find trading opportunities between visited systems.
+Unlike other web applications which aggregate data from multiple users EDDEP
+works only with systems the player has visited. This limits the options, but
+ensures the freshest available trading data.
+
+To use EDDEP you will need to have the Elite Dangerous Market Connector
+installed on your gaming computer. EDMC is available here:
+
+https://github.com/Marginal/EDMarketConnector/wiki
+
+The systems.py script needs to be placed in the EDMC data directory. This
+location is controlled by setting it in EDMC in preferences, the output tab
+by changing the File Location parameter.
+
+Once a few systems have been visited and their data files collected EDDEP can
+be used as follows.
+
+./systems.py clean
+
+Cleanup data files, i.e. multiple visits to the same system will generate
+multiple data files. This command will remove older versions. Useful for
+housekeeping if a history of prices at a given system is not needed.
+
+./systems.py list
+
+Will print a list of data file currenntly available to EDDEP. Useful for
+diagnostic purposes and to test the next command.
+
+./systems.py visited
+
+This will output the list of systems visited. It should reflect the above list.
+Its main use is to serve as a quick copy source to input origin and target
+parameters (-o -t) which most other commands need.
+
+NOTE: EDDEP will try to figure out the name of the system-station pair from
+a substring of it. So often times it will be enough to enter just 'Nourse'
+instead of the full 'Esumindii.Nourse City'. Also note that for strings not
+involving whitespace EDDEP does not need the string to be quoted.
+
+./systems.py -o Nourse buy
+
+Lists items available for sale at a given station, including price and
+quantity.
+
+./systems.py -o Nourse sell
+
+Lists item demand and its respective price on the station. Both the buy and
+sell command are useful as diagnostic commands. The two most useful commands
+are the following.
+
+./systems.py -o Nourse -t Camarda trade2
+
+The trade2 command will output a table of profitable trades between the -o
+origin station and -t target station. So if for example a mission has the
+player go from station A to station B. Trade2 can be used to earn extra
+credits on the side by selecting the most profitable trade possible between
+a pair of stations.
+
+./systems.py ferengi
+
+This command is a reference to a trading species in the Star Trek series. For
+more information on the Ferengi see: https://en.wikipedia.org/wiki/Ferengi
+
+The command will output all the trades with a profit greater than a specified
+amount with the flag -l )--lowest_profit). The default if --lowest_profit is
+not specified is 500 credits. By running ferengi with successively higher
+lowest profits one can easily find the most profitable trade within the stations
+in their data directory. Volume information is also printed in the resulting
+table, somtimes the most profitable trade will not have enough quantity of goods
+and a less profitable one may actually return more profits given the volume
+possible.
+
+If the ferengi command does not output any results, try lowering --lowest_profit
+to a value below the default 500 credits.
+"""
 
 import argparse
 import glob
@@ -184,7 +261,7 @@ class Systems:
     for item in location_items:
       columns = item.split(';')
       print('{:30} {:>5} Cr {}'.format(columns[2], int(columns[3]),
-                                            columns[6]))
+                                       columns[6]))
 
   def trade2(self, origin, target):
     """List most profitable trade items between two locations."""
@@ -205,46 +282,56 @@ class Systems:
         # If the item is available for purchase in the origin system.
         # And its the same item on both systems.
         if o_columns[7] and o_columns[2] == t_columns[2]:
-          sell_price =  int(t_columns[3])
+          sell_price = int(t_columns[3])
           buy_price = int(o_columns[4])
           profit = sell_price - buy_price
-          if profit >0:
-            print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
+          if profit > 0:
+            print('{:30} {:>5} cr {:>7} t supply'.format(
+                o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
             print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
 
-  def high_trades(self):
+  def profits_for_station_pair(self, origin, target, lowest_profit):
+    """Output profits between two stations"""
+    origin_items = self.utils.read_csv(origin, self.csv_files)
+    target_items = self.utils.read_csv(target, self.csv_files)
+    for o_item in origin_items:
+      o_columns = o_item.split(';')
+      for t_item in target_items:
+        t_columns = t_item.split(';')
+        # If the item is available for purchase in the origin system.
+        # And its the same item on both systems.
+        if o_columns[7] and o_columns[2] == t_columns[2]:
+          sell_price = int(t_columns[3])
+          buy_price = int(o_columns[4])
+          profit = sell_price - buy_price
+          if profit > int(lowest_profit):
+            print('{} ---> {}'.format(origin, target))
+            print('{:30} {:>5} cr {:>7} t supply'.format(
+                o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
+            print(' | sell@ {:>5} cr | Profit: {:>5}'.format(
+                int(t_columns[3]), profit))
+          else:
+            LOGGER.debug('Item: %s, Profit: %s', o_columns[2], profit)
+            LOGGER.debug('Items not found with profit > %s Cr.',
+                         lowest_profit)
+
+  def high_trades(self, lowest_profit=500):
     """Find locations with highest trades between them."""
-    # Iterate through all locations.
+    # Iterate through all EDMC location pairs.
     print(self.locations)
     for origin in self.locations:
       for target in self.locations:
         if origin == target or origin == 'Shinrarta Dezhra.Jameson Memorial':
           continue
         else:
-          origin_items = self.utils.read_csv(origin, self.csv_files)
-          target_items = self.utils.read_csv(target, self.csv_files)
-          for o_item in origin_items:
-            o_columns = o_item.split(';')
-            for t_item in target_items:
-              t_columns = t_item.split(';')
-              # If the item is available for purchase in the origin system.
-              # And its the same item on both systems.
-              if o_columns[7] and o_columns[2] == t_columns[2]:
-                sell_price =  int(t_columns[3])
-                buy_price = int(o_columns[4])
-                profit = sell_price - buy_price
-                if profit >500:
-                  print('{} ---> {}'.format(origin, target))
-                  print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
-                  print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
-                else:
-                  print('Items not found with profit > 500 Cr.')
+          self.profits_for_station_pair(origin, target, lowest_profit)
+
 
 def main():
   """Elite Dangerous Data Explorer."""
   # Setup arguments.
   parser = argparse.ArgumentParser(
-      description='Elite Dangerous Data Explorer.', formatter_class=argparse.RawTextHelpFormatter)
+      description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
   parser.add_argument('command',
                       help=HELP_TXT)
   parser.add_argument('-o', '--origin',
@@ -253,6 +340,8 @@ def main():
   parser.add_argument('-t', '--to',
                       help='Target location, can be substring of full name as'
                       ' long as its unambigous.')
+  parser.add_argument('-l', '--lowest_profit', default=500, help='Lowest profit'
+                      ' allowable for the ferengi command.')
   args = parser.parse_args()
   # Load systems
   systems = Systems()
@@ -282,7 +371,7 @@ def main():
       exit()
     systems.list_goods_prices(args.origin)
   if args.command == 'ferengi':
-    systems.high_trades()
+    systems.high_trades(args.lowest_profit)
 
 
 if __name__ == "__main__":
