@@ -215,6 +215,7 @@ class Systems:
   def high_trades(self):
     """Find locations with highest trades between them."""
     # Iterate through all locations.
+    print(self.locations)
     for origin in self.locations:
       for target in self.locations:
         if origin == target or origin == 'Shinrarta Dezhra.Jameson Memorial':
@@ -232,10 +233,12 @@ class Systems:
                 sell_price =  int(t_columns[3])
                 buy_price = int(o_columns[4])
                 profit = sell_price - buy_price
-                if profit >1650:
+                if profit >500:
                   print('{} ---> {}'.format(origin, target))
                   print('{:30} {:>5} cr {:>7} t supply'.format(o_columns[2], int(o_columns[4]), int(o_columns[7])), end='')
                   print(' | sell@ {:>5} cr | Profit: {:>5}'.format(int(t_columns[3]), profit))
+                else:
+                  print('Items not found with profit > 500 Cr.')
 
 def main():
   """Elite Dangerous Data Explorer."""
