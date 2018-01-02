@@ -11,7 +11,8 @@ HELP_TXT = """Command can be one of:
 clean: cleanup older data files.
 list: list all data files.
 visited: lists all the locations visited.
-buy: lists all items for sale on a location."""
+buy: lists all items for sale on a location.
+sell: lists all station buy prices at location."""
 
 LOGGER = logging.getLogger('systems.py')
 LOGGER.setLevel(logging.DEBUG)
@@ -169,6 +170,19 @@ class Systems:
       if columns[7]:
         print('{:25} {:>5} Cr {:>8} t'.format(columns[2], int(columns[4]),
                                               int(columns[7])))
+  def list_goods_prices(self, location):
+    """List which can be sold at station."""
+    # Get full location name from snippet.
+    location = self.utils.location_matcher(location, self.locations)
+    # Match csv fil and get items.
+    location_items = self.utils.read_csv(location, self.csv_files)
+    if not location_items:
+      return
+    print('ITEM, LOCATION Buy PRICE, DEMAND - {}'.format(location))
+    for item in location_items:
+      columns = item.split(';')
+      print('{:25} {:>5} Cr {}'.format(columns[2], int(columns[3]),
+                                            columns[6]))
 
   def trade2(self, origin, target):
     """List most profitable trade items between two locations."""
@@ -221,6 +235,11 @@ def main():
       print('Please specify origin snippet. Run with -h for help.')
       exit()
     systems.list_goods_for_sale(args.origin)
+  if args.command == 'sell':
+    if not args.origin:
+      print('Please specify origin snippet. Run with -h for help.')
+      exit()
+    systems.list_goods_prices(args.origin)
 
 if __name__ == "__main__":
   try:
